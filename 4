@@ -1,0 +1,184 @@
+library(tidyverse)
+
+
+## Faça todos os gráficos utilizando um tema que você ache mais adequado
+## e nomeie os eixos x e y da maneira adequada
+
+## Carregue o banco world do pacote poliscidata
+
+library(poliscidata)
+
+banco <- world
+
+## Observe o banco de dados com as funções adequadas
+
+
+
+## A variável democ_regime08 indica se um país é democrático.
+## Usando as ferramentas de manipulacao de bancos de dados, verifique
+## quantos paises sao democraticos ou nao, e apresente esta variável 
+## graficamente
+glimpse(banco)
+str(banco)
+summary(banco)
+head(banco)
+tail(banco)
+
+
+banco %>%
+  count(democ_regime08)
+# há 95 democracias no mundo e 69 não democracias. O banco ainda não classificou 3 países (NA).
+
+ggplot(banco, aes(fct_infreq(democ_regime08)))+
+  geom_bar()+
+  labs(title = "Percentagem de países democráticos e não democráticos",
+       x = "Democracias no mundo",
+       y = "percentagem")
+
+## Teste a relação entre a variável democ_regime08 e a variável
+## muslim (que indica se um país é muçulmano ou não). E represente
+## visualmente as variáveis para visualizar se esta religião
+## aumenta ou diminui a chance de um país ser democrático
+## Qual seria sua conclusão com relação a associação destas duas
+## variáveis?
+
+str(banco$muslim)
+
+barras<-ggplot(banco, aes(banco$democ_regime08)) 
+barras + geom_bar(aes(fill = banco$muslim))+
+labs(title = "Percentagem de democracias segundo a presença de mulçumanos",
+     x = "Democracias no mundo",
+     y = "percentagem")+
+    scale_fill_discrete(name="Muçulmano")
+
+#Visualmente, é possível inferir que os muçulmanos são minorias em países democráticos. Já em países não democráticos, não há uma maioria visível por parte dos muçulmanos.
+
+tabela<-table(banco$democ_regime08, banco$muslim)
+tabela
+prop.table(tabela, 1)
+
+chisq.test(tabela)
+
+library(graphics)
+
+mosaicplot(tabela, shade=TRUE)
+
+library(vcd)
+assoc(tabela, shade= TRUE)
+
+#De acordo com o teste Qui-quadrado, com 1 grau de liberdade, o valor de X2X2 é de 26,665 e p-valor de 2.419e-07.
+#Dessa forma, rejeita-se Ho e aceita-se H1, indicando que há evidências estatísticas para afirmar que há uma associação entre as variáveis.
+#Quanto menos democrático, maior a presença de muçulmanos.
+
+## A variável gdppcap08 possui informação sobre o PIB per capta
+## dos países. Faça uma representação gráfica desta variável
+
+summary(banco$gdppcap08)
+library(dplyr)
+library(ggplot2)
+
+ggplot(banco, aes(banco$gdppcap08, ..count../sum(..count..)))+
+  geom_density()+
+  scale_y_continuous()+
+  labs(title = "Distribuição de PIB per capita",
+       x = "PIB per capita",
+       y = "Porcentagem de países" )
+
+ggplot(banco, aes("",gdppcap08)) +
+  geom_boxplot()+
+  labs(title = "Distribuição de PIB per capita",
+       x = "PIB per capita",
+       y = "Percentagem" )
+
+
+## Faça um sumario com a média, mediana e desvio padrão do pib per capta
+## para cada tipo de regime politico, represente a associação destas
+## variáveis graficamente, e faça o teste estatístico adequado para
+## chegar a uma conclusão. Existe associaçào entre as variáveis?
+
+banco %>%
+  group_by(democ_regime08) %>%
+  summarise(media = mean(gdppcap08, na.rm = TRUE),
+            mediana = median(gdppcap08, na.rm = TRUE),
+            desvio = sd(gdppcap08, na.rm = TRUE))
+
+barras<-ggplot(banco, aes(banco$democ_regime08)) 
+barras + geom_bar(aes(fill = banco$gdppcap08))+ 
+                    labs(title = "Percentagem de democracias segundo PIB per Capita",
+                         x = "Democracias no mundo",
+                         y = "PIB per capita")
+
+graf<-ggplot(banco, aes(banco$gdppcap08, fill=banco$democ_regime08))+ 
+  geom_density(alpha = 0.3)+ 
+  labs(title = "Percentagem de democracias segundo PIB per Capita",
+       x = "PIB per capita",
+       y = "densidade")+
+  scale_fill_discrete(name="Democracias")
+
+graf
+
+Teste-T
+
+T<-t.test(gdppcap08 ~ democ_regime08, data = banco)
+
+T
+#Existe associação entre as variáveis. Com um p-value = 0.004418, o que rejeita H0.
+#Aceita h1, uma vez que as médias diferente de forma estatisticamente significativa. 
+#com intervalo de 95% de confiança. A renda per capita em não democracias á 9243,77, em democracias é 16351,178
+
+
+## Por fim, ao invés de utilizar uma variável binária de democracia,
+## utilize a variável dem_score14 para avaliar se existe uma associação
+## entre regime político e desenvolvimento econômico. Represente
+## a associação graficamente, faça o teste estatístico e explica sua
+## conclusão
+
+ggplot(banco, aes(dem_score14, gdppcap08))+
+  geom_point()+
+  labs(title = "Democracia e PIB per capita",
+       x = "Democracia - variável contínua",
+       y = "PIB per capita") 
+
+cor.test(banco$dem_score14, banco$gdppcap08)
+
+#Há correlação moderada (50.5)
+# O p-valor é baixo, então rejeita H0, aceita H1.
+
+## Teste a associação entre renda perca capta e religiao (com a variável
+## muslim) e represente graficamente. Qual é sua conclusão? 
+
+
+t.test(gdppcap08 ~ muslim, data = banco)
+
+
+ggplot(banco, aes (muslim, gdppcap08))+
+  geom_boxplot()+
+  labs(title =  "PIB per capita e presença muçulmana",
+       x = "Presença muçulmana",
+       y = "PIB per capita") 
+
+
+barras<-ggplot(banco, aes(banco$gdppcap08)) 
+barras + geom_bar(aes(fill = banco$muslim))+
+  labs(title = "PIB per capital segundo a presença de mulçumanos",
+       x = "PIB per capita",
+       y = "percentagem")+
+  scale_fill_discrete(name="Muçulmano")
+
+
+## Comparando suas conclusões anteriores, é possível afirmar qual
+## das duas variáveis possui maior impacto no desenvolvimento economico?
+## Por que? 
+#Os países não muçulmanos possuem, uma renda per capita maior que os países com presença muçulmanos.
+# É possível ver isso a partir da diferença das médias no teste-t
+# e também graficamente representado.
+
+
+
+##########################################################################
+
+## Exercício teórico
+## Levando em consideração as variáveis de seu trabalho final,
+## qual dos 3 testes estatísticos utilizados seria adequado utilizar?
+
+#É necessário utilizar correlação e teste t para amostras independentes.
