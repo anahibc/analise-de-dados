@@ -1,0 +1,752 @@
+# Existem diversas medidas de democracia para os países: 
+#`dem_score14`, `democ11`, `fhrate04_rev`, `fhrate08_rev`, `polity`. 
+#Descreva-as graficamente e diga quais são as diferenças entre tais medidas.
+library(poliscidata)
+library(tidyverse)
+library(graphics)
+library(scales)
+library(vcd)
+library(digest)
+library(plotly)
+library(apply)
+
+
+banco <- world
+
+par(mfrow= c(1,2))
+hist(banco$dem_score14,col= "light blue",xlab = "democracia", breaks = 15)
+boxplot(banco$dem_score14, col = "blue", xlab= "boxplot democracia")
+banco$dem_score14
+
+#a variável é contínua, decorrente de pesquisa do Economist, 2014. Varia de zero a dez, 
+#quanto mais democrático mais próximos de 10,  quanto menos, menor a pontuação.
+#Não possui distribuição normal, muito embora não esteja tão distante dos padrões de normalidade.
+#No boxplot, é possível identificar que há maior frequência abaixo da pontuação 6.
+?world
+
+par(mfrow= c(1,2))
+hist(banco$democ11, col= "light blue",xlab = "democracia", breaks=10)
+boxplot(banco$democ11, col = "light green", xlab= "boxplot democracia")
+banco$democ11
+
+#Pontuação para democracias em 2011, de acordo com pesquisa da ONU.
+#É uma variável ordinal que varia de 0 a 10, com as pontuações mais altas para regimes democráticos.
+#O histograma é bimodal, apresentando uma moda na pontuação 0 e outra na pontuação 10.
+#A mediana está acima de 6, mas a maior parte das democracias sólidas (acima de 7) representam uma minoria.
+#Percebe-se que há dois grupos bem distintos presentes na mesma variável.
+
+
+par(mfrow= c(1, 2))
+hist(banco$fhrate04_rev, breaks= 15)
+boxplot(banco$fhrate04_rev)
+banco$fhrate04_rev
+
+#Trata-se de uma variável contínua que indica o grau de liberdade, 
+#de modo que 7 representa casos de maior liberdade, 
+#já  1 representa casos com o mínimo de liberdade.
+# A variável claramente não possui distribuição normal e possui mediana 5, 
+#indicando que os países estudados possuem características que favorece a liberdade, 
+#uma vez que a mediana se encontra muito acima da pontuação média de 3,5.
+
+
+par(mfrow= c(1, 2))
+hist(banco$fhrate08_rev)
+boxplot(banco$fhrate08_rev)
+banco$fhrate08_rev
+#Trata-se de uma variável ordinal que indica o grau de liberdade econômica, 
+#que reescalonou a variável fhrate04_rev para variar de 0 a 12, sendo 0 menos liberdade e 12 mais liberdade.
+# A variável claramente não possui distribuição normal e possui mediana por volta de 7, 
+#indicando que os países estudados possuem características que favorece a liberdade.
+
+
+
+par(mfrow= c(1, 2))
+hist(banco$polity, breaks= 15)
+boxplot(banco$polity)
+banco$polity
+#Pontuações mais altas indicam casos mais democráticos. 
+#Trata-se de uma variável continua que varia de -10 a +10
+#mediana próxima a 7.
+
+ggplot(banco, aes(x = "", y = dem_score14)) + geom_boxplot()
+ggplot(banco,aes(x = dem_score14)) + geom_histogram()
+ggplot(banco, aes(x = "", y = democ11)) + geom_boxplot()
+ggplot(banco, aes(x = democ11)) + geom_histogram()
+ggplot(banco, aes(x = "", y = fhrate04_rev)) + geom_boxplot()
+ggplot(banco, aes(x = fhrate04_rev)) + geom_histogram()
+ggplot(banco, aes(x = "", y = fhrate08_rev)) + geom_boxplot()
+ggplot(banco, aes(x = fhrate08_rev)) + geom_histogram()
+ggplot(banco, aes(x = "", y = polity)) + geom_boxplot()
+ggplot(banco, aes(x = polity)) + geom_histogram()
+
+
+### Avalie a relação entre todas as medidas de democracia e desigualdade, 
+#utilizando a variável `gini08`. Descreva graficamente esta variável, 
+#a relação entre as duas variáveis, meça a correlação entre elas 
+#e faça regressões lineares (interpretando em profundidade os resultados dos coeficientes 
+#e medidas de desempenho dos modelos). 
+#Enfatize as semelhanças e diferenças entre os resultados. 
+#Quais são suas conclusões?
+
+# requisitos de normalidade
+
+normalidade<-function(x)
+{
+  
+  t1 <- ks.test(x, "pnorm") # KS  * Amostras grandes *n>30
+  t2 <- lillie.test(x) # Lilliefors
+  t3 <- cvm.test(x) # Cramér-von Mises
+  t4 <- shapiro.test(x) # Shapiro-Wilk **** Amostras pequenas n<30
+  t5 <- sf.test(x) # Shapiro-Francia
+  t6 <- ad.test(x) # Anderson-Darling
+  t7<-pearson.test(x) # Pearson Test of Normality
+  
+  testes <- c(t1$method, t2$method, t3$method, t4$method, t5$method,t6$method,t7$method)
+  valorp <- c(t1$p.value, t2$p.value, t3$p.value, t4$p.value, t5$p.value,t6$p.value,t7$p.value)
+  
+  resultados <- cbind(valorp)
+  rownames(resultados) <- testes
+  print(resultados, digits = 4)
+  
+}
+
+#gini08
+qqnorm(banco$gini08,main = "",ylab= "quartis", xlab = "Quantis teóricos N(0,1)", pch = 20)
+qqline(banco$gini08, lty = 1, col = "red")
+normalidade(banco$gini08)
+
+#Apenas para o teste de normalidade pearson, a variável gini08 pode ser considerada normal.
+#com p- valor acima de 0,05, de modo que se aceita H0.
+
+
+
+#dem_score14
+qqnorm(banco$dem_score14, main = "",ylab= "quartis", xlab = "Quantis teóricos N(0,1) - score14", pch = 20)
+qqline(banco$dem_score14, lty = 1, col = "red")
+normalidade(banco$dem_score14)
+#Para todos os testes, essa variável não possui distribuição normal.
+#p-valor é < 0,05, rejeita H0.
+
+
+#democ11
+qqnorm(banco$democ11,main = "",ylab= "quartis", xlab = "Quantis teóricos N(0,1)- democ11", pch = 20)
+qqline(banco$democ11, lty = 1, col = "red")
+normalidade(banco$democ11)
+#Para todos os testes, essa variável não possui distribuição normal.
+#p-valor é < 0,05, rejeita H0.
+
+#fhrated04_rev
+qqnorm(banco$fhrate04_rev, main = "",ylab= "quartis", xlab = "Quantis teóricos N(0,1)- fhrated04_rev", pch = 20)
+qqline(banco$fhrate04_rev, lty = 1, col = "red")
+normalidade(banco$fhrate04_rev)
+#Para todos os testes, essa variável não possui distribuição normal.
+#p-valor é < 0,05, rejeita H0.
+
+#fhrated08_rev
+qqnorm(banco$fhrate08_rev, main = "",ylab= "quartis", xlab = "Quantis teóricos N(0,1)- fhrated08_rev", pch = 20)
+qqline(banco$fhrate08_rev, lty = 1, col = "red")
+normalidade(banco$fhrate08_rev)
+#Para todos os testes, essa variável não possui distribuição normal.p-valor é < 0,05, rejeita H0.
+
+#polity
+qqnorm(banco$polity,main = "",ylab= "quartis", xlab = "Quantis teóricos N(0,1) - polity", pch = 20)
+qqline(banco$polity, lty = 1, col = "red")
+normalidade(banco$polity)
+#Para todos os testes, essa variável não possui distribuição normal.
+#p-valor é < 0,05, rejeita H0.
+
+#relação entre variáveis
+# gini08 e dem_score14
+
+cor.test(banco$gini04,banco$dem_score14,method="spearman")
+cor.test(banco$gini04,banco$dem_score14,method="pearson")
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 0,0038, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação entre variáveis
+#rho: - 0,2611
+#Com Intensidade fraca e sentido negativa, isto é, são variáveis inversamente proporcionais.
+
+#pearson
+
+#p-valor= 0,02216, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação entre variáveis
+#correlação: - 0,20785
+#intervalo de confiança de -0,3725 a -0,0304, não passa pela origem.
+#Com Intensidade fraca e sentido negativa, isto é, são variáveis inversamente proporcionais.
+
+#Gráficos de dispersão
+
+#Gráfico gini08, dem_score14 com reta de aproximação
+ggplot(data = banco, aes(x = banco$dem_score14, y = banco$gini08)) + geom_point()+geom_smooth(method=lm)
+
+# regressão linear
+
+Regressao_dem_score14_gini08_01 <- lm(dem_score14 ~ gini08, data = banco)
+Regressao_dem_score14_gini08_01
+summary(Regressao_dem_score14_gini08_01)
+coefficients(Regressao_dem_score14_gini08_01)
+
+Regressao_dem_score14_gini08_01$residuals
+Regressao_dem_score14_gini08_01$fitted.values
+
+summary(Regressao_dem_score14_gini08_01)$r.squared 
+summary(Regressao_dem_score14_gini08_01)$adj.r.squared
+
+
+ Regressão entre Gini08 e dem_score14: 
+  Variável Independente (y) escolhida é o Indice de Gini e a variável dependente (x) é dem_score14.
+O intecepto é  7,71756 (*intercept*), isto é, se o índice de Gini for 0, o intercepto indica o valor que assume a variável independente.
+ Quando o Índice de Gini for igual a 1, há uma variação negativa de 0,04448 na variável dem_score14.
+ r quadrado : 0.04808709
+  r quadrado ajustado: 04015448
+  pvalor < 0,05 
+ De acordo com o *residual standard error* (RMSE) a distância  entre valores observados e  estimados do *intercept* e do Índice de Gini é de 2,003. 
+ De acordo com o R2 esse modelo explica apenas 4,01% do total de variação em dem_score14. 
+
+#relação entre variáveis
+# gini08 e democ11
+
+cor.test(banco$gini04,banco$democ11,method="spearman")
+cor.test(banco$gini04,banco$democ11,method="pearson")
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 0,0139, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação entre variáveis
+#rho: - 0,2288
+#Com Intensidade fraca e sentido negativa, isto é, são variáveis inversamente proporcionais.
+
+#pearson
+
+#p-valor= 0,3741, portanto, maior que 0,05. Aceita-se H0, e rejeita-se a tese de que há associação entre variáveis
+#correlação: - 0,0836
+#intervalo de confiança de -0,2626 a 0,101, passa pela origem, o que corrobora que não há associação linear entre as variáveis.
+#Com Intensidade muito fraca e sentido negativa, isto é, seriam variáveis inversamente proporcionais, se tivessem correlação linear.
+
+
+#Gráfico gini08, democ11 com reta de aproximação
+ggplot(data = banco, aes(x = banco$democ11, y = banco$gini08)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não há correlação linear.
+
+#Existe correlação entre as variáveis, mas não é linear, como ficou observado com o teste de correlação de spearman
+#Por isso optou-se por não executar a regressão linear nesse caso.
+
+#relação entre variáveis
+# gini08 e fhrate04_rev
+
+cor.test(banco$gini04,banco$fhrate04_rev,method="spearman")
+cor.test(banco$gini04,banco$fhrate04_rev)
+
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 0,009827, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação não linear entre variáveis
+#rho: - 0,23387
+#Com Intensidade fraca e sentido negativa, isto é, são variáveis inversamente proporcionais.
+
+#pearson
+
+##p-valor= 0,112, portanto, maior que 0,05. Aceita-se H0, e rejeita-se a tese de que há associação entre variáveis
+#correlação: - 0,1449
+#intervalo de confiança de -0,315 a 0,3440, passa pela origem, o que corrobora que não há associação linear entre as variáveis.
+#Com Intensidade muito fraca e sentido negativa, isto é, seriam variáveis inversamente proporcionais, se tivessem correlação linear.
+
+
+#Gráfico gini08, fhrate04_rev com reta de aproximação
+ggplot(data = banco, aes(x = banco$fhrate04_rev, y = banco$gini08)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não há correlação linear.
+
+#Existe correlação entre as variáveis, mas não é linear, como ficou observado com o teste de correlação de spearman
+#Por isso optou-se por não executar a regressão linear nesse caso.
+
+#relação entre variáveis
+# gini08 e fhrate08_rev
+
+cor.test(banco$gini04,banco$fhrate08_rev,method="spearman")
+cor.test(banco$gini04,banco$fhrate08_rev)
+
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 0,00432, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação não linear entre variáveis
+#rho: - 0,2587
+#Com Intensidade fraca e sentido negativa, isto é, são variáveis inversamente proporcionais.
+
+#pearson
+
+##p-valor= 0,112, portanto, maior que 0,05. Aceita-se H0, e rejeita-se a tese de que há associação entre variáveis
+#correlação: - 0,159
+#intervalo de confiança de -0,3292 a 0,0203, passa pela origem, o que corrobora que não há associação linear entre as variáveis.
+#Com Intensidade muito fraca e sentido negativa, isto é, seriam variáveis inversamente proporcionais, se tivessem correlação linear.
+
+
+#Gráfico gini08, fhrate08_rev com reta de aproximação
+ggplot(data = banco, aes(x = banco$fhrate08_rev, y = banco$gini08)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não há correlação linear.
+
+#Existe correlação entre as variáveis, mas não é linear, como ficou observado com o teste de correlação de spearman
+#Por isso optou-se por não executar a regressão linear nesse caso.
+
+#relação entre variáveis
+# gini08 e polity
+
+cor.test(banco$gini04,banco$polity,method="spearman")
+cor.test(banco$gini04,banco$polity)
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 0,00432, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação não linear entre variáveis
+#rho: - 0,2587
+#Com Intensidade fraca e sentido negativa, isto é, são variáveis inversamente proporcionais, mas com comportamento não linear.
+
+#pearson
+
+##p-valor= 0,659, portanto, maior que 0,05. Aceita-se H0, e rejeita-se a tese de que há associação entre variáveis
+#correlação: - 0,04
+#intervalo de confiança de -0,2229 a 0,1426, passa pela origem, o que corrobora que não há associação linear entre as variáveis.
+#Com Intensidade muito fraca e sentido negativa, isto é, seriam variáveis inversamente proporcionais, se tivessem correlação linear.
+
+
+#Gráfico gini08, fhrate08_rev com reta de aproximação
+ggplot(data = banco, aes(x = banco$polity, y = banco$gini08)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não há correlação linear.
+#Por isso optou-se por não executar a regressão linear nesse caso.
+
+
+#Semelhanças e diferenças entre os resultados e conclusões:
+#No geral, não há uma associaçao linear entre as variáveis. 
+#Há associação não linear, portanto, as regressões não são modelos úteis,
+#exceto para as variáveis gini08 e dem_score14.
+
+
+# Avalie a relação entre todas as medidas de democracia e crescimento econômico, 
+#utilizando a variável `gdppcap08`. 
+#Descreva graficamente esta variável, a relação entre as duas variáveis, 
+#meça a correlação entre elas e faça regressões lineares 
+#(interpretando em profundidade os resultados dos coeficientes e medidas de desempenho dos modelos). Enfatize as 
+#semelhanças e diferenças entre os resultados. Quais são suas conclusões?
+
+#gdppcap08
+par(mfrow= c(1,2))
+hist(banco$gdppcap08,col= "light blue",xlab = "democracia", breaks = 15)
+boxplot(banco$gdppcap08, col = "blue", xlab= "boxplot democracia")
+banco$dem_score14
+#Claramente, não é normal, com assimetria a esquerda, isto é, nos valores mais baixos.
+#Variável contínua que indica renda per capita de 2008 (GDP per capita in 2008 - World Bank)
+
+qqnorm(banco$gdppcap08,main = "",ylab= "quartis", xlab = "Quantis teóricos N(0,1)", pch = 20)
+qqline(banco$gdppcap08, lty = 1, col = "red")
+normalidade(banco$gdppcap08)
+# Tanto graficamente, como segundo todos os testes é possível inferir que não há distribuição normal padrão.
+
+
+#relação entre variáveis
+# gdppcap08 e dem_score14
+
+cor.test(banco$gdppcap08,banco$dem_score14,method="spearman")
+cor.test(banco$gdppcap08,banco$dem_score14,method="pearson")
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 1,613e-15, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação entre variáveis
+#rho:  0,5882
+#Com Intensidade moderada e sentido positivo, isto é, são variáveis diretamente proporcionais.
+
+#pearson
+
+#p-valor= 3.159e-11, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação entre variáveis
+#correlação: 0,5052
+#intervalo de confiança de  0,3763618 a 0,6150148, não passa pela origem.
+#Com Intensidade moderada e sentido positivo, isto é, são variáveis diretamente proporcionais.
+
+#Gráficos de dispersão
+
+#Gráfico gdppcap08, dem_score14 com reta de aproximação
+ggplot(data = banco, aes(x = banco$dem_score14, y = banco$gdppcap08)) + geom_point()+geom_smooth(method=lm)
+
+# regressão linear
+
+Regressao_dem_score14_gdppcap08 <- lm(dem_score14 ~ gdppcap08, data = banco)
+Regressao_dem_score14_gdppcap08
+summary(Regressao_dem_score14_gdppcap08)
+coefficients(Regressao_dem_score14_gdppcap08)
+
+summary(Regressao_dem_score14_gdppcap08)
+coefficients(Regressao_dem_score14_gdppcap08)
+
+Regressao_dem_score14_gdppcap08$residuals
+Regressao_dem_score14_gdppcap08$fitted.values
+
+summary(Regressao_dem_score14_gdppcap08)$r.squared 
+summary(Regressao_dem_score14_gdppcap08)$adj.r.squared
+
+
+Regressão entre gdppcap08 e dem_score14: 
+  Variável Independente (y) escolhida é o PIB per capita (gdppcap08) e a variável dependente (x) é dem_score14.
+O intecepto é 4.678e+00(*intercept*), isto é, se o gdppcap08 for 0, o intercepto indica o valor que assume a variável independente.
+Quando o gdppcap08 for igual a 1, há uma variação positiva de 7.040e-05 na variável dem_score14.
+r quadrado : 0,2553
+r quadrado ajustado: 0,2504 
+pvalor < 0,05
+
+De acordo com o *residual standard error* (RMSE) a distância  entre valores observados e  estimados do *intercept* e do Índice de Gini é de 1,864. 
+De acordo com o R2 esse modelo explica  25% do total de variação em dem_score14. 
+
+
+#relação entre variáveis
+# gdppcap08 e democ11
+
+cor.test(banco$gdppcap08,banco$democ11,method="spearman")
+cor.test(banco$gdppcap08,banco$democ11,method="pearson")
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 1,603e-08, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação entre variáveis
+#rho: 0,4522596
+#Com Intensidade moderada e sentido positivo, isto é, são variáveis diretamente proporcionais.
+
+#pearson
+
+#p-valor= 0,000435, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação linear entre variáveis
+#correlação: 0,291358
+#intervalo de confiança de 0,1330147 a 0.4351981, não passa pela origem, o que corrobora que há associação linear entre as variáveis.
+#Com Intensidade  fraca e sentido positivo, isto é, seriam variáveis diretamente proporcionais.
+
+
+#Gráfico gdppcap08, democ11 com reta de aproximação
+ggplot(data = banco, aes(x = banco$democ11, y = banco$gdppcap08)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não preenche os requisitos para uma regressão linear, uma vez que não cumpre com os requisitos de distribuição normal padrão
+
+#Existe correlação entre as variáveis, mas não é linear, como ficou observado com o teste de correlação de spearman
+#Por isso optou-se por não executar a regressão linear nesse caso.
+
+#relação entre variáveis
+# gdppcap08 e fhrate04_rev
+
+cor.test(banco$gdppcap08,banco$fhrate04_rev,method="spearman")
+cor.test(banco$gdppcap08,banco$fhrate04_rev)
+
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 2,751e-12, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação não linear entre variáveis
+#rho: 0.5279775
+#Com Intensidade moderada e sentido positiva, isto é, são variáveis diretamente proporcionais.
+
+#pearson
+
+##p-valor= 1.331e-08, portanto, menor que 0,05. Rejeita-se H0, e aceita-se a tese de que há associação entre variáveis
+#correlação: 0,4407043
+#intervalo de confiança de  0,3027442 a 0,5605748, não passa pela origem, o que corrobora que  há associação linear entre as variáveis.
+#Mas como já fei visto, não cumpre os requisitos de normalidade.
+#Com Intensidade moderada e sentido positivo, isto é, seriam variáveis diretamente proporcionais.
+
+
+#Gráfico gdppcap08, fhrate04_rev com reta de aproximação
+ggplot(data = banco, aes(x = banco$fhrate04_rev, y = banco$gdppcap08)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não há correlação linear.
+
+#Existe correlação entre as variáveis, mas não é linear, como ficou observado com o teste de correlação de spearman
+#Por isso optou-se por não executar a regressão linear nesse caso.
+
+#relação entre variáveis
+# gdppcap08 e fhrate08_rev
+
+cor.test(banco$gdppcap08,banco$fhrate08_rev,method="spearman")
+cor.test(banco$gdppcap08,banco$fhrate08_rev)
+
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 1,03e-11, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação não linear entre variáveis
+#rho: 0,5173897
+#Com Intensidade moderada e sentido positiva, isto é, são variáveis diretamente proporcionais.
+
+#pearson
+
+##p-valor= 0,112, portanto, maior que 0,05. Aceita-se H0, e rejeita-se a tese de que há associação entre variáveis
+#correlação: 0,44413 
+#intervalo de confiança de 0.3061176 a 0.563858, não passa pela origem, o que corrobora que há associação  entre as variáveis.
+# Mas não cumpre com os requisitos de normalidade.
+#Com Intensidade moderada e sentido positivo, isto é, seriam variáveis idiretamente proporcionais, se tivessem correlação linear.
+
+
+#Gráfico gdppcap08, fhrate08_rev com reta de aproximação
+ggplot(data = banco, aes(x = banco$fhrate08_rev, y = banco$gdppcap08)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não há correlação linear.
+
+#Existe correlação entre as variáveis, mas não é linear, como ficou observado com o teste de correlação de spearman
+#Por isso optou-se por não executar a regressão linear nesse caso.
+
+#relação entre variáveis
+# gdppcap08 e polity
+
+cor.test(banco$gdppcap08,banco$polity,method="spearman")
+cor.test(banco$gdppcap08,banco$polity)
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 3,066e-08, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação não linear entre variáveis
+#rho0,4442132
+#Com Intensidade moderada e sentido positivo, isto é, são variáveis diretamente proporcionais, mas com comportamento não linear.
+
+#pearson
+
+##p-valor= 0.04392, portanto, menor que 0,05. Rejeita-se H0, e Aceita-se a tese de que há associação entre variáveis
+#correlação: 0.169353
+#intervalo de confiança de  0.004758504 a 0.325013386, não passa pela origem, o que corrobora que há associação  entre as variáveis.
+#Com Intensidade muito fraca e sentido positiva, isto é, seriam variáveis diretamente proporcionais, se tivessem correlação linear.
+
+
+#Gráfico gdppcap08, fhrate08_rev com reta de aproximação
+ggplot(data = banco, aes(x = banco$polity, y = banco$gdppcap08)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não há correlação linear.
+#Por isso optou-se por não executar a regressão linear nesse caso.
+
+
+# Avalie a relação entre todas as medidas de democracia e produção de petróleo, utilizando a variável `oil`. 
+#Descreva graficamente esta variável, a relação entre as duas variáveis, 
+#meça a correlação entre elas e faça regressões lineares 
+#(interpretando em profundidade os resultados dos coeficientes e medidas de desempenho dos modelos). 
+#Enfatize as semelhanças e diferenças entre os resultados. 
+#Quais são suas conclusões?
+
+
+# Avalie a relação entre crescimento econômico e produção de petróleo. 
+#Descreva a relação entre as duas variáveis, meça a correlação entre elas 
+#e faça regressões lineares (interpretando em profundidade 
+#os resultados dos coeficientes e medidas de desempenho dos modelos). 
+#Enfatize as semelhanças e diferenças entre os resultados. 
+#Quais são suas conclusões?
+
+
+
+
+
+
+#Oil
+par(mfrow= c(1,2))
+hist(banco$oil,col= "light blue",xlab = "Presença de petróleo", breaks = 15)
+boxplot(banco$gdppcap08, col = "blue", xlab= "boxplot presença de petróleo")
+banco$dem_score14
+#Claramente, não é normal, com assimetria a esquerda, isto é, nos valores mais baixos.
+#Variável contínua que indica presença de petróleo
+#Oil production, in barrels per day (CIA)
+
+qqnorm(banco$oil,main = "",ylab= "quartis", xlab = "Quantis teóricos N(0,1)", pch = 20)
+qqline(banco$oil, lty = 1, col = "red")
+normalidade(banco$oil)
+# Tanto graficamente, como segundo todos os testes é possível inferir que não há distribuição normal padrão.
+
+
+#relação entre variáveis
+# oil e dem_score14
+
+cor.test(banco$oil,banco$dem_score14,method="spearman")
+cor.test(banco$oil,banco$dem_score14,method="pearson")
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor=0.8954, portanto, muito maior que 0,05. Aceita-se H0, e Rejeita-se a tese de que há associação entre variáveis
+#rho:  -0.01031663
+#Com Intensidade muito fraca e sentido negativo, isto é, seriam variáveis inversamente proporcionais, se tivessem associação.
+
+#pearson
+
+#p-valor= 0.1041, portanto, maior que 0,05. Aceita-se H0, e rejeita-se a tese de que há associação entre variáveis
+#correlação: -0,1269762 
+#intervalo de confiança de   -0.27443572 a 0.02631799,  passa pela origem, o que corrobora não haver associação entre variáveis
+#Com Intensidade fraca e sentido negativo, isto é, seriam variáveis inversamente proporcionais.
+
+#Gráficos de dispersão
+
+#Gráfico oil, dem_score14 com reta de aproximação
+ggplot(data = banco, aes(x = banco$dem_score14, y = banco$oil)) + geom_point()+geom_smooth(method=lm)
+##Já havia sido identificado que não preenche os requisitos para uma regressão linear, 
+#uma vez que não cumpre com os requisitos de distribuição normal padrão , tampouco há correlação entre variáveis
+
+
+Regressao_dem_score14_oil <- lm(dem_score14 ~ oil, data = banco)
+Regressao_dem_score14_oil
+summary(Regressao_dem_score14_oil)
+
+coefficients(Regressao_dem_score14_oil)
+
+
+Regressao_dem_score14_oil$residuals
+Regressao_dem_score14_oil$fitted.values
+
+summary(Regressao_dem_score14_oil)$r.squared 
+summary(Regressao_dem_score14_oil)$adj.r.squared
+
+
+Regressão entre oil e dem_score14: 
+  Variável Independente (y) escolhida é o Produção de petróleo (oil) e a variável dependente (x) é dem_score14.
+O intecepto é 5.654199e+00(*intercept*), isto é, se a produção de petróleo for 0, o intercepto indica o valor que assume a variável independente.
+Quando Oil for igual a 1, há uma variação negativa de -1.881276e-07  na variável dem_score14.
+r quadrado : 0.01612294
+r quadrado ajustado: 0.01008689
+pvalor < 0,05, rejeita H0, isto é, os coeficientes são significantes
+
+De acordo com o *residual standard error* (RMSE) a distância  entre valores observados e  estimados do *intercept* e do Oil é de 2,177.
+De acordo com o R2 esse modelo explica apenas 1,6% do total de variação em dem_score14. 
+
+
+#relação entre variáveis
+# oil e democ11
+
+cor.test(banco$oil,banco$democ11,method="spearman")
+cor.test(banco$oil,banco$democ11,method="pearson")
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor=  0.3652, portanto, maior que 0,05. Aceita-se H0, e rejeita-se a tese de que há associação entre variáveis
+#rho: -0.07601794
+#Com Intensidade muito fraca e sentido negativo, isto é, são variáveis inversamente proporcionais.
+
+#pearson
+
+#p-valor= 0.08798, portanto, maior que 0,05. Aceita-se H0, e rejeita-se a tese de que há associação linear entre variáveis
+#correlação: -0,1426942
+#intervalo de confiança de-0.29928445 a  0.02138076,  passa pela origem, o que corrobora que não há associação linear entre as variáveis.
+#Com Intensidade  fraca e sentido negativo, isto é, seriam variáveis inversamente proporcionais.
+
+
+#Gráfico oil, democ11 com reta de aproximação
+ggplot(data = banco, aes(x = banco$democ11, y = banco$oil)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não preenche os requisitos para uma regressão linear, uma vez que não cumpre com os requisitos de distribuição normal padrão
+
+#Não Existe correlação entre as variáveis, como ficou observado com os testes de correlação de spearman e pearson
+#não foram cumpridos os requisitos de normalidade
+#Por isso optou-se por não executar a regressão linear nesse caso.
+
+#relação entre variáveis
+# oil e fhrate04_rev
+
+cor.test(banco$oil,banco$fhrate04_rev,method="spearman")
+cor.test(banco$oil,banco$fhrate04_rev)
+
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 0,3206, portanto, maior que 0,05. Aceita-se H0, e rejeita-se a tese de que há associação não linear entre variáveis
+#rho: -0,0810958
+#Com Intensidade muito fraca e sentido negativo, isto é, são variáveis inversamente proporcionais.
+
+#pearson
+
+##p-valor=0.0562, portanto, um pouco que 0,05. Rejeita-se H0, e aceita-se a tese de que há associação entre variáveis
+#correlação: -0.1552185 
+#intervalo de confiança de  -0.306837012 a  0.004083069,  passa pela origem, o que corrobora que não  há associação linear entre as variáveis.
+#Com Intensidade muito fraca e sentido negativo, isto é, são variáveis inversamente proporcionais.
+
+
+#Gráfico oil, fhrate04_rev com reta de aproximação
+ggplot(data = banco, aes(x = banco$fhrate04_rev, y = banco$oil)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não há correlação linear.
+
+#Não Existe correlação entre as variáveis,como ficou observado com os testes de spearman e pearson
+#Por isso optou-se por não executar a regressão linear nesse caso.
+
+#relação entre variáveis
+# oil e fhrate08_rev
+
+cor.test(banco$oil,banco$fhrate08_rev,method="spearman")
+cor.test(banco$oil,banco$fhrate08_rev)
+
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 0.2806, portanto, maior que 0,05. Aceita-se H0, e Rejeita-se a tese de que há associação não linear entre variáveis
+#rho: -0,08836171
+#Com Intensidade muito fraca e sentido negativo, isto é, são variáveis inversamente proporcionais.
+
+#pearson
+
+##p-valor= 0,112, portanto, maior que 0,05. Aceita-se H0, e rejeita-se a tese de que há associação entre variáveis
+#correlação: -0.152052 
+#intervalo de confiança de  -0.304387817 a 0.007867529, passa pela origem, o que corrobora de que não há associação  entre as variáveis.
+# Mas não cumpre com os requisitos de normalidade.
+#Com Intensidade fraca e sentido negativo, isto é, seriam variáveis inversamente proporcionais, se tivessem correlação linear.
+
+
+#Gráfico oil, fhrate08_rev com reta de aproximação
+ggplot(data = banco, aes(x = banco$fhrate08_rev, y = banco$oil)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não há correlação linear.
+
+#Não Existe correlação entre as variáveis, como ficou observado com os testes de spearman e pearson
+#Por isso optou-se por não executar a regressão linear nesse caso.
+
+#relação entre variáveis
+# oil e polity
+
+cor.test(banco$oil,banco$polity,method="spearman")
+cor.test(banco$oil,banco$polity)
+#O teste de correlação de spearman é mais adequado para avaliar a correlação entre as variáveis.
+#Spearman
+
+#p-valor= 0.3747, portanto, maior que 0,05. Aceita-se H0, e Rejeita-se a tese de que há associação não linear entre variáveis
+#rho: -0,07451641 
+#Com Intensidade muito fraca e sentido negativo, isto é, são variáveis inversamente proporcionais.
+
+#pearson
+
+##p-valor= 0.02979, portanto, menor que 0,05. Rejeita-se H0, e Aceita-se a tese de que há associação entre variáveis
+#correlação: -0,1811511 
+#intervalo de confiança de  -0.33480603 a -0.01811182, não passa pela origem, o que corrobora que há associação  entre as variáveis.
+#Com Intensidade  fraca e sentido negativa, isto é, seriam variáveis inversamente proporcionais.
+
+
+#Gráfico oil, fhrate08_rev com reta de aproximação
+ggplot(data = banco, aes(x = banco$polity, y = banco$oil)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não há correlação linear.
+
+
+Regressao_polity_oil <- lm(banco$polity ~ banco$oil, data = banco)
+Regressao_polity_oil
+summary(Regressao_polity_oil)
+
+coefficients(Regressao_polity_oil)
+
+
+Regressão entre oil e polity: 
+  Variável Independente (y) escolhida é o Produção de petróleo (oil) e a variável dependente (x) é polity.
+O intecepto é 4.752e+00(*intercept*), isto é, se a produção de petróleo for 0, o intercepto indica o valor que assume a variável independente.
+Quando Oil for igual a 1, há uma variação negativa de 7.104511e-07  na variável polity.
+r quadrado : 0.03282
+
+pvalor < 0,05, rejeita H0, isto é, os coeficientes são significantes
+
+De acordo com o *residual standard error* (RMSE) a distância  entre valores observados e  estimados do *intercept* e do Oil é de 6.024 .
+De acordo com o R2 esse modelo explica apenas 3,2% do total de variação em dem_score14. 
+Nesse modelo, a produção de petroleo pode impactar negativamente a democracia com uma intensidade muito fraca.
+
+
+#Gráfico oil, gdppcap08 com reta de aproximação
+ggplot(data = banco, aes(x = banco$oil, y = banco$gdppcap08)) + geom_point()+geom_smooth(method=lm)
+#Já havia sido identificado que não há correlação linear.
+
+Regressao_gdppcap08_oil <- lm (oil ~ gdppcap08, data = banco)
+summary (Regressao_gdppcap08_oil)
+
+Variável Independente (x) escolhida é  Produção de petróleo (oil) e a variável dependente (y) é a renda (gdppcap08) . 
+O intecepto é  2.888e+05(*intercept*), isto é, se a produção de petróleo for 0, o intercepto indica o valor que assume a variável independente.
+Quando Oil for igual a 1, há uma variação positiva de 1.828e+01  na variável renda (gdppcap08)
+r quadrado : 0.03443
+
+pvalor < 0,05, rejeita H0, isto é, os coeficientes são significantes
+
+De acordo com o *residual standard error* (RMSE) a distância  entre valores observados e  estimados do *intercept* e do Oil é de 15280 . O que indica problemas no modelo.
+De acordo com o R2 esse modelo explica apenas 3,4% do total de variação em dem_score14. 
+Nesse modelo, a produção de petroleo pode impactar positivamente no PIB com uma intensidade muito fraca.
+
+
+# A partir das suas conclusões sobre a relação entre democracia, economia e produção de petróleo, 
+#quais considerações são possíveis fazer sobre a relação CAUSAL entre estas variáveis? 
+#Lembre dos 4 "hurdles" do livro *Fundamentals of Political Science Research*
+
+A relação entre democracia e desigualdade (Índice de Gini) a correlação só é detectada quando é feito o teste com dem_score14 e, em parte, fhrate04_rev. 
+Em nenhum dos casos, cumprem-se os requisitos de normalidade.
+Na regressão os valores do intercept e do coeficiente de inclinação só são significativo quando é feito o teste com dem_score14. 
+Entre os modelos de regressão o que melhor explicou a variação nos graus de democracia foi o que comparou o índice de Gini com o dem_score14, explicando 4% da variação na democracia. Entre democracia e desenvolvimento econômico (gdppcap08) a correlação existe entre todas as variáveis de democracia e a relação entre as variáveis é positiva. Ao analisar a regressão dessa etapa a que melhor explica a variação na democracia é o modelo com dem_score14, no qual o gdppcap08 explica 25% da variação no nível de democracia. A literatura discute bastante a relação entre democracia (Y) e crescimento econômico (X) ou democracia (Y) e desigualdade (X) (1º “hurdle”), no entanto nem todas as medidas de democracia passam pelo 3º “hurdle”, pois entre algumas variáveis de democracia não existe correlação com as outras medidas. A literatura também discute o fato de ser o nível de democracia que causa variação no Índice de Gini ou no crescimento econômico, portanto não podemos descartar a chance de Y causar X. Por fim os modelos não levam em consideração outras outras variáveis Z que podem fazer a associação entre X e Y desaparecer. Entre democracia e produção de petróleo (oil) existe uma relação negativa. E só existe correlação entre oil e polity. O único modelo de regressão que possui os dois coeficientes significativos é o modelo com polity, nele oil explica 3,2% da variação na democracia.
+Entre crescimento econômico (y) e produção de petróleo (x) existe uma correlação e a relação é positiva. No entanto, a produção de petróleo explica apenas 3,4% da variação no crescimento econômico. 
+Democracia e Produção de Petróleo: Entre democracia e produção de petróleo, foi identificado um baixo poder explicativo, sem significância estatística
