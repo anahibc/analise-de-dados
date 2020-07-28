@@ -1,0 +1,440 @@
+library(scales)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(vcd)
+library(digest)
+library(plotly)
+library(RColorBrewer)
+library(ggbeeswarm)
+
+Questão 1
+
+url <- "https://github.com/MartinsRodrigo/Analise-de-dados/raw/master/04622.sav"
+download.file(url, "banco.sav", mode = "wb")
+
+library(haven)
+
+banco <- read_sav("banco.sav")
+write_sav(banco, "banco.sav")
+
+ou
+
+library(foreign)
+banco <- read.spss("D:/banco.sav", use.value.label=TRUE, to.data.frame=TRUE)
+banco
+glimpse(banco)
+str(banco)
+summary(banco)
+head(banco)
+tail(banco)
+view(banco)
+
+Questão 2
+
+
+banco$Q1607 <- as.numeric(banco$Q1607)
+
+b<- banco %>%
+  filter(Q1607 <= 10, rm.na= TRUE)
+b
+
+ggplot(b, aes(b$Q1607))+
+  geom_histogram(bins = 20)
+
+ggplot(b, aes(b$Q1607, ..count../sum(..count..) )) +
+  geom_bar(na.rm = T) +
+  scale_y_continuous(labels = percent)+
+  labs(title = "Aprovação a Jair Bolsonaro",
+       x = "'Nível de estima a Jair Bolsonaro", 
+       y = "Número de respondentes")
+
+ggplot(b, aes(b$Q1607)) +
+  geom_density(adjust = 0.5)+
+  scale_y_continuous(labels = percent)+
+  labs(title = "Aprovação a Jair Bolsonaro",
+       x = "'Nível de estima a Jair Bolsonaro", 
+       y = "Número de respondentes")
+
+ggplot(b, aes(x = "", y = b$Q1607)) + 
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) +
+  labs(title = "Apreciação a Jair Bolsonaro",
+       y = "Nível de apreço a Jair Bolsonaro")
+
+### A variável Q1607 indica o apreço por Jair Bolsonaro com variação de 0 a 10; excluídos os Valores acima de 10, uma vez que as respostas não indicam nível de apreciação.
+###Represente graficamente esta variável apenas com os valores válidos e descreva o resultado.*OBS: transforme esta variável para númerica com a função `as.numeric()`.
+
+Questão 3
+
+## Explorando a variável Idade - D1A_ID
+
+ggplot(b, aes("", D1A_ID)) +
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) + geom_beeswarm() + 
+  labs(x="Distribuição da Idade dos respondentes")
+
+ggplot(b, aes(b$D1A_ID)) +
+  geom_density(adjust = 0.3)+
+  scale_y_continuous(labels = percent)+
+  labs(title = "Nível de instrução dos respondentes",
+       x = "Nível de de instrução", 
+       y = "Número de respondentes")
+
+ggplot(b, aes(b$D1A_ID))+
+  geom_histogram(bins = 20)+
+  scale_y_continuous()+
+  labs(title = "Nível de instrução dos respondentes",
+       x = "Nível de de instrução", 
+       y = "Número de respondentes")
+
+
+## Q1607 e D1A_ID
+
+cor.test(b$Q1607,b$D1A_ID)
+
+#Existe correlação entre as variáveis.
+
+#pearson
+
+##p-valor= 1.235e-06, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação entre variáveis
+#cor: 0,1003613 
+#intervalo de confiança de 0.0599630 a 0.1404313, não passa pela origem, o que corrobora que há associação  entre as variáveis.
+#Com Intensidade muito fraca e sentido positivo, isto é, seriam variáveis diretamente proporcionais.
+
+
+#Gráfico Q1607 e D1A_ID com reta de aproximação
+ggplot(data = b, aes(x = b$D1A_ID, y = b$Q1607)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  labs(title = "Gráfico de dispersão de apreço a Bolsonaro e Idade",
+       x = "Idade", y = "Apreço a Bolsonaro",
+       caption = "Elaboração própria a partir de dados do IBOPE")
+
+
+## Q1607 e D1A_ID
+
+cor.test(b$Q1607,b$D1A_ID,method="spearman")
+cor.test(b$Q1607,b$D1A_ID)
+
+#Existe correlação entre as variáveis.
+
+#Spearman
+
+#p-valor= 2.47e-06, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação entre variáveis
+#rho: 0,0974
+#Com Intensidade fraca e sentido positivo, isto é, são variáveis diretamente proporcionais.
+
+#pearson
+
+##p-valor= 1.235e-06, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação entre variáveis
+#cor: 0.10036
+#intervalo de confiança de 0.0599630 a 0.1404313, não passa pela origem, o que corrobora que há associação linear entre as variáveis.
+#Com Intensidade muito fraca e sentido positivo, isto é, seriam variáveis diretamente proporcionais, se tivessem correlação linear.
+
+
+#Gráfico Q1607 e D1A_ID com reta de aproximação
+ggplot(data = b, aes(x = b$D1A_ID, y = b$Q1607)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  labs(title = "Gráfico de dispersão de apreço a Bolsonaro e idade",
+       x = "Idade", y = "Apreço a Bolsonaro",
+       caption = "Elaboração própria a partir de dados do IBOPE")
+
+
+r1 <- lm(D1A_ID ~ Q1607, data = b)
+
+summary(r1)
+
+Regressão entre Q1607 e D1A_ID: 
+  Variável Independente (y) escolhida é o apreçço por Bolsonaro (Q1607) e a variável dependente (x) é a idade (D1a_ID)
+O intecepto é 38.91631(*intercept*), isto é, se a idade for 0, o intercepto indica o valor que assume a variável independente.
+Quando a idade for igual a 1, há uma variação positiva de 0,39446 na variável de apreciação.
+r quadrado : 0,01007
+pvalor < 0,05
+
+De acordo com o *residual standard error* (RMSE) a distância  entre valores observados e  estimados é de 15,53. 
+De acordo com o R2 esse modelo explica  1% do total de variação em apreciação a Bolsonaro (y). 
+
+### Observe a variável D3_ESCOLA dos respondentes relativa a educação Represente esta variável graficamente. #OBS: observe que esta variável está como numérica, apesar de ser categórica ordinal. No entanto, trate-a como numérica, indicando que quanto maior o valor, maior o nível educacional do respondente.
+### Teste a associação entre a nota dada a Jair Bolsonaro e educação do respondente, explicando o resultado.
+### Faça uma regressao linear mostrando em que medida a educação do respondente explica a avaliação do candidato Jair Bolsonaro. Interprete o resultado.
+
+
+
+
+
+
+
+
+
+
+
+
+###Questão 4- Bolsonaro e Educação
+
+## Explorando a variável de educação - D3_ESCOLA
+
+ggplot(b, aes(b$D3_ESCOLA, ..count../sum(..count..) )) +
+  geom_bar(na.rm = T) +
+  scale_y_continuous(labels = percent)+
+  labs(title = "Nível de instrução dos respondentes",
+       x = "Nível de de instrução", 
+       y = "Número de respondentes")
+
+ggplot(b, aes(b$D3_ESCOLA)) +
+  geom_density(adjust = 0.5)+
+  scale_y_continuous(labels = percent)+
+  labs(title = "Nível de instrução dos respondentes",
+       x = "Nível de de instrução", 
+       y = "Número de respondentes")
+
+## Q1607 e D3_ESCOLA
+
+cor.test(b$Q1607,b$D3_ESCOLA)
+
+#Existe correlação entre as variáveis.
+
+#pearson
+
+##p-valor= 0,001114, portanto, menor que 0,05. Rejeita H0, e aceita-se a tese de que há associação entre variáveis
+#cor: -0,06755432 
+#intervalo de confiança de -0.10790092 a -0.02698556, não passa pela origem, o que corrobora que há associação  entre as variáveis.
+#Com Intensidade muito fraca e sentido negativo, isto é, seriam variáveis inversamente proporcionais.
+
+
+#Gráfico Q1607 e D3_ESCOLA com reta de aproximação
+ggplot(data = b, aes(x = b$D3_ESCOLA, y = b$Q1607)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  labs(title = "Apreço a Bolsonaro e Nível de Instrução",
+       x = "Educação", y = "Apreço a Bolsonaro",
+       caption = "Elaboração própria a partir de dados do IBOPE")
+
+r2 <- lm(D3_ESCOLA ~ Q1607, data = b)
+
+summary(r2)
+
+Regressão entre Q1607 e D1A_ID: 
+  Variável Independente (y) escolhida é o apreço por Bolsonaro (Q1607) e a variável dependente (x) é nível de instrução (D3_ESCOLA)
+O intecepto é  5.10550(*intercept*), isto é, se a educação for 0, o intercepto indica o valor que assume a variável independente.
+Quando a idade for igual a 1, há uma variação negativa de -0,03856 na variável de apreciação.
+r quadrado : 0,004564
+pvalor < 0,05
+
+De acordo com o *residual standard error* (RMSE) a distância  entre valores observados e  estimados é de 2,26. 
+De acordo com o R2 esse modelo explica  0,4% do total de variação em apreciação a Bolsonaro (y). 
+
+
+
+
+
+
+
+
+
+###Questão 5
+### Observe a variável D9 sobre renda dos respondentes. Represente esta variável graficamente. #OBS: note que os valores 9999998 e 9999999 devem ser descartados.
+### Teste a associação entre a nota dada a Jair Bolsonaro e renda do respondente, explicando o resultado.
+
+b$D9
+b_renda <- b %>%
+  filter(D9 != 9999999)%>%
+  filter(D9 != 9999998)
+b_renda
+
+
+
+ggplot(b_renda, aes(x = "", y = D9)) + 
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) +
+  labs(title = "Renda dos respondentes",
+       y = "Nível de renda")
+### Teste a associação entre a nota dada a Jair Bolsonaro e renda do respondente, explicando o resultado.
+
+cor.test(b_renda$D9, b_renda$Q1607)
+
+#Existe correlação entre as variáveis.
+
+#pearson
+
+##p-valor=  0.8474, portanto, maior que 0,05. Aceita-se H0, e Rejeita-se a tese de que há associação entre variáveis
+#cor: 0,00451955 
+#intervalo de confiança de  -0.04150014 a  0.05052010,  passa pela origem, o que corrobora que não há associação  entre as variáveis.
+#Com Intensidade muito fraca e sentido positivo, isto é, seriam variáveis diretamente proporcionais.
+
+
+#Gráfico Q1607 e D9 com reta de aproximação
+ggplot(data = b_renda, aes(x = b_renda$D9, y = b_renda$Q1607)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  labs(title = "Apreço a Bolsonaro e Nível de Instrução",
+       x = "Educação", y = "Apreço a Bolsonaro",
+       caption = "Elaboração própria a partir de dados do IBOPE")
+
+
+
+r3 <- lm(Q1607 ~ D9, data = b_renda)
+r3
+summary(r3)
+confint(r3)
+
+Regressão entre Q1607 e D9: 
+  Não há condições necessarias para realizar uma regressão. Não há correlação entre as variáveis.
+  Variável Independente (y) escolhida é o apreço por Bolsonaro (Q1607) e a variável dependente (x) é nível de renda (D9)
+O intecepto é  5.578e+00(*intercept*), isto é, se a renda for 0, o intercepto indica o valor que assume a variável independente.
+Quando a idade for igual a 1, há uma variação positiva de 5.857e-06 na variável de apreciação.
+r quadrado : 2.043e-05
+pvalor < 0,05
+
+De acordo com o *residual standard error* (RMSE) a distância  entre valores observados e  estimados é de 3,959. 
+De acordo com o R2 esse modelo explica  um valor muito próximo de 0 do total de variação em apreciação a Bolsonaro (y). 
+
+
+
+
+
+
+
+
+###Questão 6
+### Deixando as variáveis socio-economicas de lado, vamos analisar agora variáveis relativas a preferências políticas.
+### A variável Q1501 indica uma nota de 0 a 10 ao PT. Valores acima de 10 representam respostas não uteis para nossa pesquisa. 
+###Represente graficamente esta variável apenas com os valores válidos e descreva o resultado.
+### Teste a associação entre a nota dada a Jair Bolsonaro e a nota dada ao PT, explicando o resultado.
+### Faça uma regressao linear mostrando em que medida a nota dada ao PT pelo respondente explica a avaliação do candidato Jair Bolsonaro. Interprete o resultado.
+
+
+b_PT <- b %>%
+  filter (Q1501 <= 10)
+ggplot(b_PT, aes(Q1501))+
+  geom_histogram(bins=25)
+
+b_PT$Q1501
+
+ggplot(b_PT, aes(b_PT$Q1501, ..count../sum(..count..) )) +
+  geom_bar(na.rm = T) +
+  scale_y_continuous(labels = percent)+
+  labs(title = "Aprovação do PT",
+       x = "'Nível de estima ao PT", 
+       y = "Número de respondentes")
+
+### Teste a associação entre a nota dada a Jair Bolsonaro e aprovação ao PT.
+
+cor.test(b_PT$Q1501, b_PT$Q1607)
+
+#Existe correlação entre as variáveis.
+
+#pearson
+
+##p-valor=  2.2e-16, portanto, menor que 0,05. Rejeita-se H0, e Aceita-se a tese de que há associação entre variáveis
+#cor: -0,3975407 
+#intervalo de confiança de  -0.4320901 a -0.3618260, naõ passa pela origem, o que corrobora que  há associação  entre as variáveis.
+#Com Intensidade moderada e sentido negativo, isto é, seriam variáveis inversamente proporcionais.
+
+
+#Gráfico Q1607 e Q1501 com reta de aproximação
+ggplot(data = b_PT, aes(x = b_PT$Q1501, y = b_PT$Q1607)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  labs(title = "Apreço a Bolsonaro e relação ideológica com o  PT",
+       x = "Apreço ao PT", y = "Apreço a Bolsonaro",
+       caption = "Elaboração própria a partir de dados do IBOPE")
+
+
+
+r4 <- lm(Q1607~ Q11501, data = b_PT)
+r4
+summary(r4)
+confint(r4)
+
+Regressão entre Q1607 e Q1501: 
+
+Variável Independente (y) escolhida é o apreço por Bolsonaro (Q1607) e a variável dependente (x) é apreço ao PT (Q1501)
+O intecepto é 5.78893(*intercept*), isto é, se a renda for 0, o intercepto indica o valor que assume a variável independente.
+Quando o apreço ao PT for igual a 1, há uma variação negativa de -0.38435  na variável de apreciação a Bolsonaro.
+r quadrado : 0.158
+pvalor < 0,05
+
+De acordo com o *residual standard error* (RMSE) a distância  entre valores observados e  estimados é de 3,522. 
+De acordo com o R2 esse modelo explica  15,8% do total de variação em apreciação a Bolsonaro (y) em detrimento do PT. 
+
+
+
+
+
+
+
+
+###Questão 7
+### A variável Q18 indica uma auto-atribuição em uma escala ideologica de 0 a 10, da esquerda para a direita.
+###Valores acima de 10 representam respostas não uteis para nossa pesquisa. Represente graficamente esta variável apenas com os valores válidos e descreva o resultado.
+### Teste a associação entre a nota dada a Jair Bolsonaro e a auto-atribuição ideológica, explicando o resultado.
+### Faça uma regressao linear mostrando em que medida a auto-atribuição ideológica do repondente explica a avaliação do candidato Jair Bolsonaro. Interprete o resultado.
+
+b_Q18 <- b %>%
+  filter (Q18 <= 10)
+
+ggplot(b_Q18, aes(Q18))+
+  geom_histogram(bins = 25)
+
+ggplot(b_Q18, aes(b_Q18$Q18, ..count../sum(..count..) )) +
+  geom_bar(na.rm = T) +
+  scale_y_continuous(labels = percent)+
+  labs(title = "Escala ideológica",
+       x = "Ideologia", 
+       y = "Número de respondentes")
+
+ggplot(b_Q18, aes(b_Q18$Q18)) +
+  geom_density(adjust = 0.5)+
+  scale_y_continuous(labels = percent)+
+  labs(title = "Escala ideológica",
+       x = "Ideologia", 
+       y = "Número de respondentes")
+
+###Na legenda do IBOPE, 10 é o valor mais a direita do espectro ideológico, então podemos dizer que a maior frequência dos respondentes se considera de direita, 
+###A segunda maior frequência foi o 5  (centro) e a terceira representa a esquerda política.
+
+
+
+#Gráfico Q1607 e Q18 com reta de aproximação
+ggplot(data = b_Q18, aes(x = b_Q18$Q18, y = b_Q18$Q1607)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  labs(title = "Apreço a Bolsonaro e Ideologia",
+       x = "Ideologia", y = "Apreço a Bolsonaro")
+
+
+
+r5 <- lm(Q1607~ Q18, data = b_Q18)
+r5
+summary(r5)
+confint(r5)
+
+Regressão entre Q1607 e Q18: 
+  
+  Variável Independente (y) escolhida é o apreço por Bolsonaro (Q1607) e a variável dependente (x) é ideologia (Q18)
+O intecepto é  3.00636(*intercept*), isto é, se a renda for 0, o intercepto indica o valor que assume a variável independente.
+Quando a ideologia crescer 1 em direção à direita, há uma variação positiva de 0,40941  na variável de apreciação a Bolsonaro.
+r quadrado : 0,1251
+pvalor < 0,05
+
+De acordo com o *residual standard error* (RMSE) a distância  entre valores observados e  estimados é de 3,695. 
+De acordo com o R2 esse modelo explica  12,51% do total de variação em apreciação a Bolsonaro (y). 
+
+### Observando o resultado das regressões, você diria que qual tipo de 
+###variável explica mais a variação das notas atribuidas a Jair Bolsonaro,
+###as socio-economicas ou políticas?
+
+Todas as regressões apresentam problemas graves, 
+mas aquelas com valor explicativo melhor são as associadas a fatores políticos.
+A Q18 (ideologia) explica 13% da variação a Q1501 (nota do PT) 15,8%
+
+### Observando o resultado das regressões, você diria que algum modelo erra menos comparado aos outros na nota prevista atribuída a Jair Bolsonaro?
+
+###O menor *Residual standard error* (RMSE) que indica a distância média entre os valores observados e os valores estimados da variável dependente, 
+###Os modelos com menos erros são respectivamenteo que compara Bolsonaro com a aprovação do PT (Residual standard error: 3,643) e o modelo que associa aprovação de Bolsonaro e Ideologia (Residual standard error: 3.695). 
+
+
+### Observando o resultado das regressões, você diria que qual(quais) variáveis possui(em) maior efeito no nota atribuída a Jair Bolsonaro?
+### Como não foi realizada uma regressão múltipla, nem testes para analisar o impacto de cada variável, não é possível afirmar com segurança.
+###De um modo geral, todas as regressões apresentam problemas graves.
+###Mas as regressões r5(ideologia) e r(apreço ao PT) possuem os maiores fatores explicativos com os respectivos r quadrado: 0,1251 e 0,158
+
