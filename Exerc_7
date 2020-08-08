@@ -1,6 +1,5 @@
 
 
-Questão 1
 
 url <- "https://github.com/MartinsRodrigo/Analise-de-dados/raw/master/04622.sav"
 download.file(url, "banco.sav", mode = "wb")
@@ -130,7 +129,7 @@ r quadrado : 0.158Quando há uma variação de 1 na idade, há uma variação po
 pvalor < 0,05
 
 De acordo com o *residual standard error* (RMSE) a distância  entre valores observados e  estimados é de 3,522. 
-De acordo com o R2 esse modelo explica  15,8% do total de variação em apreciação a Bolsonaro (y) em detrimento do PT. 
+De acordo com o R2 esse modelo explica  15,8% do total de variação em apreciação a Bolsonaro.
 
 #Intervalo de confiança
 
@@ -227,12 +226,6 @@ O aumento de 1 desvio padrão em Q18, gera um aumento de 0,2806159 desvio padrã
 #A variável da nota do PT (Q1501) tinha um impacto de -0,41118, e agora é de -4,154e-01. 
 #A variável da ideologia (Q18) tinha um impacto positivo de 0,40941, e agora tem de 3,244e-01. No exercício anterior ao olhar para os *Multiple R-squared* de cada modelo, as variáveis que mais explicavam a variação na nota de Bolsonaro eram as variáveis políticas. A Q18 (ideologia) explicava 13% da variação e a Q1501 (nota do PT) 15,8%. A idade explicava 1% da variação, a escolaridade 0,45% e a renda não demonstrou resultados significativos na regressão. O modelo multivariado do exercício atual tem varíaveis que combinadas explicam aproximadamente 28% da variação na nota de Jair Bolsonaro (Q1607). 
 
-
-### No exercício anterior foram feitos alguns modelos bivariados. 
-Agora faça uma regressão multivariada mostrando como a nota atribuída a Jair Bolsonaro (variável Q1607) 
-pode ser explicada pelas variáveis idade (D1A_ID), educação (D3_ESCOLA), renda (D9), 
-nota atribuída ao PT (Q1501) e auto-atribuição ideológica (Q18) dos respondentes. 
-Interprete o resultado a partir das informações dadas pelo sumário da regressão.
 
 
 
