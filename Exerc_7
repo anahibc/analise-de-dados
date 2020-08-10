@@ -305,7 +305,7 @@ DW é  1.885319, isto é, próximo de 2, portanto, não são correlacionados.
 ### Normalidade dos Resíduos - Modelo 2
 
 
-plot(modelo1, 2)
+plot(modelo2, 2)
 sresid <- studres(modelo1) 
 shapiro.test(sresid)
 
