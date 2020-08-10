@@ -329,4 +329,6 @@ confint(modelo3)
 
 O Modelo3 partiu das variáveis utilizadas no Modelo2 que já rejeita D1A_ID e D9 e adicionou P20.
 A variável P20 possui resultados estatisticamente significantes. Além disso com um intervalo de confiança de 95% (   -0.3975893 a -0.1388545), não passa pela origem.
+Ademais a variável P20 pontua 1 para quem crê que a lava jato combate a corrupção e 2 para quem crê que não combate a corrupção, dessa forma, o beta (P20) é menos 0,28.
+Isto é, Quem aprecisa Bolsonaro na época da pesquisa acredita que a Lava Jato combate a corrupção.
 O Modelo3 possui um r quadrado ajustado: 0.2883, isto é, o modelo explica 28,83% da apreciação a Bolsonaro e melhorou sua capacidade explicativa em 0,76%.
