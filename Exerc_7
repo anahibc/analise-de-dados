@@ -251,7 +251,7 @@ ncvTest(modelo1)
 
 
 
-### No caso da Homocedasticidade o pressuposto não é atendido. Pois o p-valor é muito baixo e por isso podemos rejeitar a hipótese nula de que a Homocedasticidade está presente. 
+### O modelo é heterocedástico.
 
 ### Autocorrelação entre casos/resíduos
 
@@ -262,7 +262,7 @@ durbinWatsonTest(modelo1)
 
 
 
-### De acordo com o gráfico não existe autocorrelação entre os casos e resíduos. Segundo o teste, com o p-valor alto de 0.038, não é possível rejeitar a hipótese nula de que não existe correlação. 
+### De acordo com o gráfico não existe autocorrelação entre os casos e resíduos. 
 
 ### Normalidade dos Resíduos
 
@@ -306,7 +306,7 @@ DW é  1.885319, isto é, próximo de 2, portanto, não são correlacionados.
 
 
 plot(modelo2, 2)
-sresid <- studres(modelo1) 
+sresid <- studres(modelo2) 
 shapiro.test(sresid)
 
 
