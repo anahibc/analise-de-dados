@@ -1,0 +1,134 @@
+QuestÃ£o 1
+
+url <- "https://github.com/MartinsRodrigo/Analise-de-dados/raw/master/04622.sav"
+download.file(url, "banco.sav", mode = "wb")
+
+banco <- read_sav("banco.sav")
+write_sav(banco, "banco.sav")
+banco
+
+
+banco <- banco %>%
+  mutate(D2_SEXO = as_factor(D2_SEXO),
+         D10 = as_factor(D10)) %>%
+  filter(Q1607 < 11)
+
+
+### Representação da variável sexo D2_SEXO
+
+ggplot(banco, aes(banco$D2_SEXO, ..count../sum(..count..) )) +
+  geom_bar(na.rm = T) +
+  scale_y_continuous(labels = percent)+
+  labs(title = "Distribuição do Sexo",
+       x = "Sexo", 
+       y = "Número de respondentes")
+
+
+  ###Represente graficamente a associação entre sexo e nota atribuida a Bolsonaro (Q1607)
+
+  ggplot(banco, aes(D2_SEXO, Q1607)) +
+    geom_boxplot()+
+    labs(title = "Boxplot apreciação a Bolsonaro por Sexo",
+         x="Sexo",
+         y= "Apreciação a Bolsonaro")
+  
+  ###Teste a associação entre sexo e aprovação de Bolsonaro
+  
+  t.test(Q1607 ~ D2_SEXO, data = banco)
+  
+  ### O teste t confirma que há diferença entre as médias dos grupos separados por sexo. O sexo masculino teve uma édia de 6,0205 e a média para o sexo feminino é de 5,061, co p valor abaixo de 0,05, confirmando a diferença ente os grupos.
+
+  ### Regressão bivariada com estas duas variáveis, verificando em que medida sexo explica a nota atribuida a Bolsonaro
+   
+  model1 <- lm(Q1607 ~ D2_SEXO, data = banco)
+    summary(model1)
+    confint(model1)
+##Com p valor abaixo de 0,05, rejeita H0, de modo que a relação é considerada estatisticamente significativa.
+##R quadrado ajustado de 0,01415, isto é, a capacidade explicativa do modelo é de 1,4%, muitíssimo baixa.
+##Intervalo de confiança D2_SEXO Feminino (referência) é de   -1.279962 a -0.6383893. Ademais o coeficiente beta é - 0,9592, isto é, são variáveis inversamente proporcionais.
+
+    
+### Representação gráfica da variável  religião (D10). 
+    
+    ggplot(banco, aes(,D10))+
+      geom_bar()+
+      theme_classic()+
+      labs(title = "Distribuição por religião",
+           y = "Religião", 
+           x = "Número de pessoas")  
+    
+    ### As religiôes católica e evangélica são claramente as mais frequentes respectivamente.
+
+    ###banco de dados uma variável de religião modificada chamada religiao com as categorias “Evangélica”, “Católica”, “Não tem religião”, e agregue todas as outras na categoria “Outras”.   
+    
+    Outras <- levels(banco$D10)[-c(3,5,13)]
+    
+    banco <- banco %>%
+      mutate(religiao = case_when(D10 %in% Outras ~ "Outras",
+                                  D10 == "Católica" ~ "Católica",
+                                  D10 == "Evangélica" ~ "Evangélica",
+                                  D10 == "Não tem religião" ~ "Não tem religião"))
+    
+    
+    ggplot(banco, aes(religiao, ..count../sum(..count..) )) +
+      geom_bar() +
+      scale_y_continuous(labels = percent)
+   
+    ###Represente graficamente a associação entre religiao e nota atribuida a Bolsonaro    
+    
+  ggplot(banco, aes(,religiao))+geom_bar(aes(fill = Q1607))
+  
+  ggplot(banco, aes(Q1607, fill = religiao)) +
+    geom_bar()+
+    theme_classic()+
+    labs(title = "Religião e apreciação a Bolsonaro",
+         x = "Nota de Bolsonaro")
+  
+  ggplot(banco, aes(religiao, Q1607)) +
+    geom_boxplot() +
+    theme_classic()+
+    labs(title = "Religião e apreciação a Bolsonaro",
+         x = "Religião",
+         y= "Apreciação a Bolsonaro")
+  
+  ### Teste de associação entre Apreciação a Bolsonaro e Religião
+  kruskal.test(Q1607 ~ religiao, data = banco)
+    
+    ### com p valor abaixo de 0,05, há indicativo de que há uma diferença significativa nas mediana entre os grupos de religiosos.
+    
+    pairwise.wilcox.test(banco$Q1607, banco$religiao,p.adjust.method = "BH")
+    
+    ### COm o teste de Wilcoxon, é possível identificar se as diferenças entre os grupos são significativas.
+    ###De acordo com o teste, há diferenças signiticativas entre católicos e evangélicos; católicos e quem não tem religião; católicos e outras religiões; evangélicos e quem não tem religião; evangélicos e outras religiões.
+###Há diferença significativa entre todos os pares exceto Outras religiões e o grupo sem religião.  
+    
+    
+    ### Regressão  religião explica a avaliação de Bolsonaro
+    
+    model2 <- lm(Q1607 ~ religiao, data = banco)
+    summary(model2)
+    confint(model2)
+    
+    ## Interpecto é 5.4410 com p valor  < 2e-16.
+    ##Com p valor abaixo de 0,05, rejeita H0, de modo que a relação é considerada estatisticamente significativa.
+    ##R quadrado ajustado de 0,0261, isto é, a capacidade explicativa do modelo é de 2,61%, muitíssimo baixa.
+    ##Os intervalos de confiancça são válidos, não passam pela origem. Pela estatística de wald, todos os betas são significativos com p-valor abaixo de 0,05. O mais curioso é que quem não tem religião e os integrantes de outras religiões crescem em razão inversamente proporcional a Bolsonaro, especialmente, quem não tem religião.
+    
+ ### Gráfico Apreciação a Bolsonaro por gênero e religião 
+    
+    
+    ggplot (banco, aes (Q1607, D2_SEXO, col = religiao)) + 
+      geom_jitter()+
+      labs(x = "Apreciação a Bolsonaro",
+           y= "Gênero"
+           )
+   
+    model3 <- lm(Q1607 ~ D2_SEXO + religiao, data = banco)
+    summary(model3)
+    
+    ## Interpecto é 5.9493 com p valor  < 2e-16.
+    ##Com p valor abaixo de 0,05, rejeita H0, de modo que a relação é considerada estatisticamente significativa.
+    ##R quadrado ajustado de 0.04039 , isto é, a capacidade explicativa do modelo é de 4,04%, muitíssimo baixa.
+    ##Os intervalos de confiancça são válidos, não passam pela origem. Pela estatística de wald, todos os betas são significativos com p-valor abaixo de 0,05. O mais curioso é que quem não tem religião e os integrantes de outras religiões crescem em razão inversamente proporcional a Bolsonaro, especialmente, quem não tem religião.
+    ## Como a variável dummy de referência é o feminino, o coeficiente demonstra que normalmente ente mulheres a apreciação é inversamente proporcional.
+    ## entre evangélicos e católicos há apreciação diretamente proporcional.
