@@ -126,6 +126,11 @@ ggplot(banco, aes(banco$D2_SEXO, ..count../sum(..count..) )) +
     model3 <- lm(Q1607 ~ D2_SEXO + religiao, data = banco)
     summary(model3)
     
+    library(dotwhisker)
+
+dwplot(model3,
+vline = geom_vline(xintercept = 0, linetype = 2))
+    
     ## Interpecto é 5.9493 com p valor  < 2e-16.
     ##Com p valor abaixo de 0,05, rejeita H0, de modo que a relação é considerada estatisticamente significativa.
     ##R quadrado ajustado de 0.04039 , isto é, a capacidade explicativa do modelo é de 4,04%, muitíssimo baixa.
