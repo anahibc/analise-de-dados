@@ -1,0 +1,73 @@
+library(tidyverse)
+library(haven)
+library(scales)
+banco <- read_spss("04622.sav") 
+banco <- banco %>%
+  mutate(D10 = as_factor(D10)) %>%
+  filter(Q1607 < 11, 
+         Q18 < 11,
+         D9 < 9999998,
+         Q1501 < 11)
+
+### Crie a mesma variável de religião utilizada no exercício anterior
+
+Outras <- levels(banco$D10)[-c(3,5,13)]
+banco <- banco %>%
+  mutate(religiao = case_when(D10 %in% Outras ~ "Outras",
+                              D10 == "Católica" ~ "Católica",
+                              D10 == "Evangélica" ~ "Evangélica",
+                              D10 == "Não tem religião" ~ "Não tem religião"))
+ggplot(banco, aes(religiao, ..count../sum(..count..) )) +
+  geom_bar() +
+  scale_y_continuous(labels = percent)
+
+### Faça uma regressão linear avaliando em que medida as variáveis independentes utilizadas nos exercícios 7 e 8, idade(D1A_ID), educação (D3_ESCOLA), renda (D9), nota atribuída ao PT (Q1501), auto-atribuição ideológica (Q18), sexo (D2_SEXO) e religião (variável criada no passo anterior) explicam a avaliação de Bolsonaro (Q1607), mas com uma interação entre as variáveis religião e sexo. Exiba o resultado da regressão e interprete os valores dos coeficientes $\beta$s estimados.
+
+
+model1 <- lm( banco$Q1607 ~ banco$D1A_ID + banco$D3_ESCOLA + banco$D9 + banco$Q1501 + banco$Q18 + banco$D2_SEXO + banco$religiao + banco$religiao * banco$D2_SEXO )
+summary(model1)
+confint(model1)
+
+### Interprete a significancia estatística dos coeficientes estimados
+
+Y = B0 + B1X +  B2.X2 + B3.X3 + B4.X4 + B5.X5 + B6.X6+ B7.X7 + X6.X7
+
+
+VariÃ¡vel Independente (y) escolhida Ã© o apreÃ§o por Bolsonaro (Q1607) e as variÃ¡veis dependentes (x1, x2, x3, x4, x5, X6, X7) 
+sÃ£o: Idade - D1A_ID; EducaÃ§Ã£o - D3_ESCOLA; Renda - D9; apreciaÃ§Ã£o PT - Q1501; e auto-atribuiÃ§Ã£o ideolÃ³gica - Q18, Gênero - D2_SEXO; e religiao.
+O intecepto Ã© 6,114e+00(*intercept*), isto Ã©, quando os demais coeficientes são iguais a 0, o intercepto indica o valor que assume a variÃ¡vel independente de apreciação a Bolsonaro.
+Quando hÃ¡ uma variaÃ§Ã£o de 1 na idade, hÃ¡ uma variaÃ§Ã£o positiva  1.065e-02 para apreciaÃ§Ã£o a Bolsonaro; sÃ£o variÃ¡veis diretamente proporcionais, mas tem p valor 0.0888, portanto, não é sigificante.
+Quando hÃ¡ uma variaÃ§Ã£o de 1 EducaÃ§Ã£o, hÃ¡ uma variaÃ§Ã£o negativa (1,134e-01) para apreciaÃ§Ã£o a Bolsonaro; sÃ£o variÃ¡veis inversamente proporcionais. Com p valor 0.0117, portanto, válido.
+Quando hÃ¡ uma variaÃ§Ã£o de 1 na renda, hÃ¡ uma variaÃ§Ã£o negativa (-3.632e-05  ) para apreciaÃ§Ã£o a Bolsonaro; sÃ£o variÃ¡veis inversamente proporcionais, com p valor 0,1897, portanto, não é válido.
+Quando hÃ¡ uma variaÃ§Ã£o de 1 na apreciaÃ§Ã£o ao PT, hÃ¡ uma variaÃ§Ã£o negativa (-3.956e-01) para apreciaÃ§Ã£o a Bolsonaro; sÃ£o variÃ¡veis inversamente proporcionais e p valor <2e-16, portanto, válido.
+Quando hÃ¡ uma variaÃ§Ã£o de 1 na ideologia em direÃ§Ã£o Ã  direita, hÃ¡ uma variaÃ§Ã£o positiva (3.150e-01) para apreciaÃ§Ã£o a Bolsonaro; sÃ£o variÃ¡veis diretamente proporcionais.E p valor menor que 0,05, portanto, válido.
+Quando hÃ¡ uma variaÃ§Ã£o de 1 na variável de gênero D2_SEXO, hÃ¡ uma variaÃ§Ã£o negativa (-3.632e-05  ) para apreciaÃ§Ã£o a Bolsonaro; sÃ£o variÃ¡veis inversamente proporcionais, com p valor 0,0122, portanto, é válido.
+De modo que mulheres tendem a rejeitar mais Bolsonaro do que homens.
+Quuanto aos grupos na variavel religiao, apenas o grupo evangélico é válido.
+r quadrado :  0.3028 
+pvalor < 0,05
+
+De acordo com o *residual standard error* (RMSE) a distÃ¢ncia  entre valores observados e  estimados Ã© de  3,297
+De acordo com o R2 esse modelo explica  30,28% do total de variaÃ§Ã£o em apreciaÃ§Ã£o a Bolsonaro (y) em sua relação com as demais variáveis mencionadas.
+
+#Intervalo de confianÃ§a
+
+confint(model1) 
+#intervalo de confiança do intercepto (4,954254e+00 a 7,274692e+00) 
+#Intervalo de confianÃ§a da VariÃ¡vel Idade - D1A_ID Ã© de  -1.616843e-03  2.292432e-02, passa pela origem e deve ser descartado.
+#Intervalo de confianÃ§a da VariÃ¡vel EducaÃ§Ã£o - D3_ESCOLA Ã© de -2,014868e-01 a -2,527982e-02
+#Intervalo de confianÃ§a da VariÃ¡vel Renda - D9 vai de -9.061286e-05  1.797812e-05, passa pela origem e deve ser descartado
+#Intervalo de confianÃ§a da VariÃ¡vel apreciaÃ§Ã£o PT - Q1501 vai de -4.421265e-01 -3.491597e-01
+#Intervalo de confianÃ§a da VariÃ¡vel auto-atribuiÃ§Ã£o ideolÃ³gica - Q18 vai de 2.638804e-01  3.661651e-01
+#Intervalo de confianÃ§a da VariÃ¡vel de gênero D2_SEXO vai de  -1.089711e+00 -1.332397e-01, portanto, é válido.
+#Intervalo de confianÃ§a de todos os grupos pertencentes à VariÃ¡vel religião são inválidos e passam pela origem.
+#Intervalo de confianÃ§a das interações entre os grupos gênero e religião também passam pela origem e são inválidos.
+
+#ANOVA
+p-valor: < 2.2e-16
+# O que significa que pelo menos uma das variÃ¡veis do modelo1 Ã© significatica
+
+
+plot_model(model1, type = 'pred', terms = c('banco$religiao', 'banco$D2_SEXO'),
+           show.intercept = TRUE, axis.title = 'Apreciação a Bolsonaro')
+# Não há diferença significativa entre os grupos, apenas entre homens e mulheres evangélicos é possível identificar uma maior apreciação a Bolsonaro por parte dos homens.
