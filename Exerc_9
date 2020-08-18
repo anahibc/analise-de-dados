@@ -68,6 +68,6 @@ p-valor: < 2.2e-16
 # O que significa que pelo menos uma das variÃ¡veis do modelo1 Ã© significatica
 
 
-plot_model(model1, type = 'pred', terms = c('banco$religiao', 'banco$D2_SEXO'),
+plot_model(model1, type = 'pred', terms = c('banco$religiao', 'banco$D2_SEXO'), ci.lvl = 0.9,
            show.intercept = TRUE, axis.title = 'Apreciação a Bolsonaro')
 # Não há diferença significativa entre os grupos, apenas entre homens e mulheres evangélicos é possível identificar uma maior apreciação a Bolsonaro por parte dos homens.
