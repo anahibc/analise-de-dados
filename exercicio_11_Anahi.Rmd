@@ -1,0 +1,135 @@
+---
+title: "Exercicio 11"
+author: Anahi
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+```
+
+
+```{r}
+setwd("D:\\dados")
+```
+
+```{r}
+library(tidyverse)
+library(haven)
+
+link <- "https://github.com/MartinsRodrigo/Analise-de-dados/blob/master/04622.sav?raw=true"
+
+download.file(link, "04622.sav", mode = "wb")
+
+banco <- read_spss("04622.sav") 
+
+banco <- banco %>%
+  mutate(D10 = as_factor(D10)) %>%
+  filter(Q1607 < 11, 
+         Q18 < 11,
+         D9 < 9999998,
+         Q1501 < 11)
+
+
+Outras <- levels(banco$D10)[-c(3,5,13)]
+
+banco <- banco %>%
+  mutate(religiao = case_when(D10 %in% Outras ~ "Outras",
+                              D10 == "Católica" ~ "Católica",
+                              D10 == "Evangélica" ~ "Evangélica",
+                              D10 == "Não tem religião" ~ "Não tem religião"))
+
+```
+
+```{r}
+library(pscl)
+library(sjPlot)
+library(dotwhisker)
+library(dplyr)
+```
+
+
+### Faça uma regressão linear avaliando em que medida as variáveis independentes utilizadas nos exercícios 7 e 8, idade(D1A_ID), educação (D3_ESCOLA), renda (D9), nota atribuída ao PT (Q1501), auto-atribuição ideológica (Q18), sexo (D2_SEXO) e religião (variável criada no passo anterior) explicam a avaliação de Bolsonaro (Q1607)
+
+
+```{r}
+r1 <- lm(Q1607 ~ D1A_ID + D3_ESCOLA + D9 + Q1501 + Q18 + D2_SEXO + religiao, data = banco)
+```
+```{r}
+summary(r1)
+```
+```{r}
+confint(r1)
+```
+```{r}
+dwplot(r1, vline = geom_vline(xintercept = 0, colour = "grey60", linetype = 2))
+```
+
+
+### Faça o teste de homoscedasticidade do modelo e corrija as estimações dos coeficientes caso seja necessário.
+
+```{r}
+par(mfrow= c(2,1))
+plot(r1,3)
+plot(r1,1)
+```
+
+```{r}
+library(lmtest)
+bptest(r1)
+```
+
+
+```{r}
+library(car)
+ncvTest(r1)
+
+```
+### Como a hipótese nula é a  homocedasticidade, é preciso ter um p valor acima de 0,05 para não rejeitar a hipótese nula, o que não foi o caso dos testes (1,025e-10 e 2,1178e-06, respectivamente). O modelo é heterocedástico e precisa ser ajustado.
+
+### Para correção
+
+```{r}
+library(sandwich)
+coeftest(r1, 
+         vcov = vcovHC(r1))
+```
+
+### Avalie a multicolinearidade entre as variáveis
+
+
+```{r}
+vif(r1)
+```
+
+### Os valores nesse teste assume um mínimo igual a 1 na ausência de   multicolinearidade. Para os casos com padrões mais flexíveis são aceitos valores entorno de 4. Nesse sentido, os números ficaram entre 1,02 e 1,33.
+
+
+### Verifique a presença de outilier ou observações influentes no modelo
+
+```{r}
+par(mfrow= c(2,1))
+plot(r1, 4)
+plot(r1, 5)
+```
+
+### Há presença de outliers ou observações influentes no modelo: 1442, 160 e 399.
+
+
+### Faça a regressao linear sem a observação mais influente e avalie a alteração do resultado
+
+### Banco retirando outliers
+```{r}
+banco2<- banco %>%
+  slice (-c (1442, 399, 160))
+```
+
+```{r}
+r2<- lm(Q1607 ~ D1A_ID + D3_ESCOLA + D9 + Q1501 + Q18 + D2_SEXO + religiao, data = banco2)
+```
+
+```{r}
+summary(r2)
+```
+### Não houve muita mudança. O intercepto, as variáveis D1A_ID, D3_ESCOLA, Q1501, Q18 e D2_SEXO se mantêm estatisticamente significativas, ademais seus valores continuam muito próximos. A variável D9 mantém a ausência de significância estatística. Quanto à variável religião, as categorias Evangêlica e Outras indicam diferença da categoria católica com os p-valores estatisticamente significantes e houve pouca mudança nos valores estimados.O R^2 passa de 30,18% para 30,60% e o *Residual standard error* variou de 3,296 para 3,286.O modelo ficou um pouco mais robusto do que o anterior.
+
